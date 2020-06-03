@@ -33,6 +33,7 @@ from matplotlib import colors
 import os
 from sys import platform
 import shlex
+import pandas as pd
 
 filename = "dynamic_images.html"
 # change the fps to speed up or slow down the animation
@@ -44,10 +45,11 @@ fig = plt.figure()
 ims = []
 
 
-def simulation(animate, p, N, nrep):
-    # empties animation array after each change in density of rocks in the sand.
-    global ims
-    ims = []
+def simulation(p, N, nrep, animate, separate):
+    if separate == True:
+        # empties animation array after each change in density of rocks in the sand.
+        global ims
+        ims = []
 
     ## The total depth across the simulation replications.
     TD = 0
@@ -127,33 +129,40 @@ def simulation(animate, p, N, nrep):
 
 def main():
     # Would you like to animate the simulations, please note this could take a while
-    animate = False
+    animate = True
+    # Determines whether to create new animation at each level of density or to
+    # append the new frames to the existing animation.
+    separate = True
     ## The density of rocks in the sand.
     p = 1
     # Grid size
     N = 20
     ## The number of simulation replications.
-    nrep = 1e2
+    nrep = [1e1,1e2]
     print("\nThe grid size is: " + str(N) + "x" + str(N))
     print("The number of simulation replications is: " + str(nrep))
-    while p > 0:
-        p = round(p, 2)
-        sim = simulation(animate, p, N, nrep)
-        NB = sim[0]
-        TD = sim[1]
-        ## The estimated probability that we reach the bottom.
-        NBprob = NB / nrep
+    for i in nrep:
+        df = pd.DataFrame(columns=["Total_Depth", "Probability"])
+        j = 0
+        while p > 0:
+            p = round(p, 2)
+            sim = simulation(p, N, i, animate, separate)
+            NB = sim[0]
+            TD = sim[1]
+            ## The estimated probability that we reach the bottom.
+            NBprob = NB / i
 
-        ## The average depth that is reached.
-        TDavg = TD / nrep
-        print("\nThe density of rocks in the sand is: " + str(p))
-        print("The total depth across the simulation replications is: " + str(TD))
-        print("The number of times that the bottom is reached: " + str(NB))
-        print("The estimated probability that we reach the bottom is: " + str(NBprob))
-        print("The average depth that is reached is: " + str(TDavg) + " of " + str(N) + " layers")
-        if animate == True:
-            create_animation()
-        p -= 0.1
+            ## The average depth that is reached.
+            TDavg = TD / i
+            df.loc[j] = [p, TD]
+            j += 1
+            print(df)
+            print("\nThe density of rocks in the sand is: " + str(p))
+            print("The total depth across the simulation replications is: " + str(TD))
+            print("The number of times that the bottom is reached: " + str(NB))
+            print("The estimated probability that we reach the bottom is: " + str(NBprob))
+            print("The average depth that is reached is: " + str(TDavg) + " of " + str(N) + " layers")
+            p -= 0.1
 
 
 def draw(data):
