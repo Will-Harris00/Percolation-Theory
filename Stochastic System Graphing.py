@@ -138,7 +138,7 @@ def main():
     # append the new frames to the existing animation.
     separate = True
     # Grid size
-    N = 20
+    N = 100
     ## The number of simulation replications.
     nrep = [1e1,1e2,1e3,1e4]
     # By how much is p decremented for each realisation
@@ -166,22 +166,31 @@ def main():
             df.loc[j] = [p, NB, NBprob, TD, TDavg]
             j += 1
             p -= step
-        # this version required a preexisting excel file matching the name above
-        try:
-            with pd.ExcelWriter(excel_file, mode='x') as writer:
+
+        if nrep.index(i) == 0:
+            with pd.ExcelWriter(excel_file) as writer:
                 writer.save()
+                print("Created the excel file " + str(excel_file))
+        try:
             with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
                 writer.book = load_workbook(excel_file)
-                sheetName = str(i) + 'realisations' + str(N) + "by"+str(N)
+                sheetName = str(i) + 'realisations' + str(N) + "by" + str(N)
                 df.to_excel(writer, sheetName, index=False, header=True)
+                try:
+                    writer.book.remove(writer.book['Sheet1'])
+                except KeyError:
+                    pass
                 writer.save()
         except PermissionError:
             print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
 
         print(df)
         df.plot(x='Density', y='Number_Bottom', kind='scatter')
+        plt.title("Water Percolation - " + str(i) + " Realisations - " + str(N) + "x" + str(N) + " Grid")
         plt.xlim(0, 1)
         plt.ylim(0, i)
+        plt.xlabel('Density of rocks in the sand')
+        plt.ylabel('Number of times the water reaches the bottom')
         plt.xticks(np.arange(0, 1+step, step=0.1))
         plt.yticks(np.arange(0, i+1, step=i/10))
         plt.show()
