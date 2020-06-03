@@ -28,6 +28,7 @@ Created on Thu Feb 13 20:23:33 2020
 ## drop reaches the bottom layer.
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from matplotlib import colors
 
 np.set_printoptions(threshold=np.inf)
@@ -35,7 +36,7 @@ np.set_printoptions(threshold=np.inf)
 p = 1 - 0.599
 
 ## The number of simulation replications.
-nrep = 1e2
+nrep = 1
 
 ## The total depth across the simulation replications.
 TD = 0
@@ -45,6 +46,10 @@ NB = 0
 
 # Grid size
 N = 20
+
+# array of images
+ims = []
+fig = plt.figure()
 
 
 def simulation():
@@ -57,6 +62,7 @@ def simulation():
         r = 0
         c = int(N / 2) - 1
         M[r, c] = 2
+        draw(M)
 
         ## Let the droplet percolate through the rocks.
         while r < N - 1:
@@ -64,20 +70,24 @@ def simulation():
             if (M[r + 1, c] == 0):
                 r = r + 1
                 M[r, c] = 2
+                draw(M)
                 ## Next try down/left.
             elif ((c > 1) & (M[r + 1, c - 1] == 0)):
                 r = r + 1
                 c = c - 1
                 M[r, c] = 2
+                draw(M)
                 ## Next try down/right.
             elif ((c < N) & (M[r + 1, c + 1] == 0)):
                 r = r + 1
                 c = c + 1
                 M[r, c] = 2
+                draw(M)
                 ## Next try right.
             elif ((c < N) & (M[r, c + 1] == 0)):
                 c = c + 1
                 M[r, c] = 2
+                draw(M)
                 ## We're stuck
             else:
                 break
@@ -91,6 +101,7 @@ def simulation():
         global TD
         TD = TD + r
         draw(M)
+        animate()
 
 
 def draw(data):
@@ -100,10 +111,18 @@ def draw(data):
     cmap = colors.ListedColormap(colors_list)
     bounds = [0, 1, 2, 3]
     norm = colors.BoundaryNorm(bounds, cmap.N)
+    global ims
+    plt.xticks([])
+    plt.yticks([])
+    im = plt.imshow(data, cmap=cmap, norm=norm)
+    ims.append([im])
 
-    fig, ax = plt.subplots()
-    ax.imshow(data, cmap=cmap, norm=norm)
 
+def animate():
+    print("\nCreating animation, please wait...")
+    print(ims)
+    ani = animation.ArtistAnimation(fig, ims, blit=True)
+    ani.save('dynamic_images.html')
     plt.show()
 
 
