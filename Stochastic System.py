@@ -43,7 +43,7 @@ np.set_printoptions(threshold=np.inf)
 p = 1 - 0.599
 
 ## The number of simulation replications.
-nrep = 1e2
+nrep = 10
 
 ## The total depth across the simulation replications.
 TD = 0
@@ -79,30 +79,39 @@ def simulation(animate):
 
         ## Let the droplet percolate through the rocks.
         while r < N - 1:
+            try:
                 ## Always go straight down if possible.
-            if (M[r + 1, c] == 0):
-                r = r + 1
-                if animate == True:
-                    water(M, r, c)
+                if (M[r + 1, c] == 0):
+                    r = r + 1
+                    if animate == True:
+                        water(M, r, c)
+
                 ## Next try down/left.
-            elif ((c > 1) & (M[r + 1, c - 1] == 0)):
-                r = r + 1
-                c = c - 1
-                if animate == True:
-                    water(M, r, c)
+                elif ((c > 1) & (M[r + 1, c - 1] == 0)):
+                    r = r + 1
+                    c = c - 1
+                    if animate == True:
+                        water(M, r, c)
+
                 ## Next try down/right.
-            elif ((c < N) & (M[r + 1, c + 1] == 0)):
-                r = r + 1
-                c = c + 1
-                if animate == True:
-                    water(M, r, c)
+                elif ((c < N) & (M[r + 1, c + 1] == 0)):
+                    r = r + 1
+                    c = c + 1
+                    if animate == True:
+                        water(M, r, c)
+
                 ## Next try right.
-            elif ((c < N) & (M[r, c + 1] == 0)):
-                c = c + 1
-                if animate == True:
-                    water(M, r, c)
+                elif ((c < N) & (M[r, c + 1] == 0)):
+                    c = c + 1
+                    if animate == True:
+                        water(M, r, c)
+
                 ## We're stuck
-            else:
+                else:
+                    break
+
+            ## We've reached the edge of the screen
+            except IndexError:
                 break
 
         ## Keep track of how often we reach the bottom.
