@@ -34,12 +34,16 @@ import os
 from sys import platform
 import shlex
 import pandas as pd
+from openpyxl import load_workbook
 
 filename = "dynamic_images.html"
+excel_file = "percolation.xlsx"
 # change the fps to speed up or slow down the animation
 writer = animation.HTMLWriter(fps=4)
-# ensure matrix is not truncated
+# ensure matrix and data frame are not truncated
 np.set_printoptions(threshold=np.inf)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 fig = plt.figure()
 # array of images
 ims = []
@@ -132,19 +136,20 @@ def main():
     animate = False
     # Determines whether to create new animation at each level of density or to
     # append the new frames to the existing animation.
-    separate = False
+    separate = True
     # Grid size
-    N = 500
+    N = 20
     ## The number of simulation replications.
-    nrep = [1e3]
+    nrep = [1e1,1e2,1e3,1e4]
     # By how much is p decremented for each realisation
-    step = 0.1
-    print("\nThe grid size is: " + str(N) + " x " + str(N))
+    step = 0.01
+    print("\nThe grid size is: " + str(N) + "x" + str(N))
     for i in nrep:
+        i = round(i)
         print("\nRunning simulation with " + str(i) + " realisations")
         ## The density of rocks in the sand.
         p = 1
-        df = pd.DataFrame(columns=["Density", "Number_Bottom"])
+        df = pd.DataFrame(columns=["Density", "Number_Bottom", "Predicted_Bottoms", "Total_Depth", "Average_Depth"])
         j = 0
         while p > 0:
             p = round(p, 2)
@@ -152,19 +157,27 @@ def main():
             NB = sim[0]
             TD = sim[1]
             ## The estimated probability that we reach the bottom.
+            ## Frequency with which the bottom is reached for a given probability
             NBprob = NB / i
 
             ## The average depth that is reached.
             TDavg = TD / i
 
-            df.loc[j] = [p, NB]
+            df.loc[j] = [p, NB, NBprob, TD, TDavg]
             j += 1
-            print("\nThe density of rocks in the sand is: " + str(p))
-            print("The total depth across the simulation replications is: " + str(TD))
-            print("The number of times that the bottom is reached: " + str(NB))
-            print("The estimated probability that we reach the bottom is: " + str(NBprob))
-            print("The average depth that is reached is: " + str(TDavg) + " of " + str(N) + " layers")
             p -= step
+        # this version required a preexisting excel file matching the name above
+        try:
+            with pd.ExcelWriter(excel_file, mode='x') as writer:
+                writer.save()
+            with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
+                writer.book = load_workbook(excel_file)
+                sheetName = str(i) + 'realisations' + str(N) + "by"+str(N)
+                df.to_excel(writer, sheetName, index=False, header=True)
+                writer.save()
+        except PermissionError:
+            print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
+
         print(df)
         df.plot(x='Density', y='Number_Bottom', kind='scatter')
         plt.xlim(0, 1)
