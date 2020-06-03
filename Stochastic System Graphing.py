@@ -37,7 +37,6 @@ import pandas as pd
 from openpyxl import load_workbook
 
 filename = "dynamic_images.html"
-excel_file = "percolation.xlsx"
 # change the fps to speed up or slow down the animation
 writer = animation.HTMLWriter(fps=4)
 # ensure matrix and data frame are not truncated
@@ -118,11 +117,15 @@ def simulation(p, N, nrep, animate, separate):
         ## Keep track of the total of the final depths.
         TD = TD + r
 
-    ## Draws the final frame of each simulation multiple times
+        # Draws the final frame of each simulation for a number of realisations
+        if animate == True:
+            draw(M, j + 1, p, N)
+
+    ## Draws the final frame of the last simulation for number of realisations
     ## to allow enough time for the user to pause the animation
     if animate == True:
         for i in range(5):
-            draw(M, j+1, p, N)
+            draw(M, j + 1, p, N)
         create_animation()
     return NB, TD
 
@@ -134,68 +137,70 @@ def main():
     # append the new frames to the existing animation.
     separate = True
     # Grid size
-    N = 100
+    sizes = [10,50,100,200,400]
     ## The number of simulation replications.
-    nrep = [1e1,1e2,1e3,1e4]
+    nrep = [100,500,1000,2000,4000]
     # By how much is p decremented for each realisation
     step = 0.01
-    print("\nThe grid size is: " + str(N) + "x" + str(N))
-    for i in nrep:
-        pc_boolean = True
-        i = round(i)
-        print("\nRunning simulation with " + str(i) + " realisations")
-        ## The density of rocks in the sand.
-        p = 1
-        df = pd.DataFrame(columns=["Density", "Number_Bottom", "Frequency_Reach_Bottom", "Total_Depth", "Average_Depth"])
-        j = 0
-        while p > 0:
-            p = round(p, 2)
-            sim = simulation(p, N, i, animate, separate)
-            NB = sim[0]
-            TD = sim[1]
-            ## The estimated probability that we reach the bottom.
-            ## Frequency with which the bottom is reached for a given probability
-            NBprob = NB / i
+    for N in sizes:
+        excel_file = "percolation" + str(N) + ".xlsx"
+        print("\nThe grid size is: " + str(N) + "x" + str(N))
+        for i in nrep:
+            pc_boolean = True
+            i = round(i)
+            print("\nRunning simulation with " + str(i) + " realisations")
+            ## The density of rocks in the sand.
+            p = 1
+            df = pd.DataFrame(columns=["Density", "Number_Bottom", "Frequency_Reach_Bottom", "Total_Depth", "Average_Depth"])
+            j = 0
+            while p > 0:
+                p = round(p, 2)
+                sim = simulation(p, N, i, animate, separate)
+                NB = sim[0]
+                TD = sim[1]
+                ## The estimated probability that we reach the bottom.
+                ## Frequency with which the bottom is reached at each probability
+                NBprob = NB / i
 
-            ## The average depth that is reached.
-            TDavg = TD / i
+                ## The average depth that is reached.
+                TDavg = TD / i
 
-            df.loc[j] = [p, NB, NBprob, TD, TDavg]
-            j += 1
+                df.loc[j] = [p, NB, NBprob, TD, TDavg]
+                j += 1
 
-            if pc_boolean and NB >= 1:
-                critperc = p
-                pc_boolean = False
-            p -= step
+                if pc_boolean and NB >= 1:
+                    critperc = p
+                    pc_boolean = False
+                p -= step
 
-        if nrep.index(i) == 0:
-            with pd.ExcelWriter(excel_file) as writer:
-                writer.save()
-                print("Created the excel file " + str(excel_file))
-        try:
-            with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
-                writer.book = load_workbook(excel_file)
-                sheetName = str(i) + 'realisations' + str(N) + "by" + str(N)
-                df.to_excel(writer, sheetName, index=False, header=True)
-                try:
-                    writer.book.remove(writer.book['Sheet1'])
-                except KeyError:
-                    pass
-                writer.save()
-        except PermissionError:
-            print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
+            if nrep.index(i) == 0:
+                with pd.ExcelWriter(excel_file) as writer:
+                    writer.save()
+                    print("Created the excel file " + str(excel_file))
+            try:
+                with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
+                    writer.book = load_workbook(excel_file)
+                    sheetName = str(i) + 'realisations' + str(N) + "by" + str(N)
+                    df.to_excel(writer, sheetName, index=False, header=True)
+                    try:
+                        writer.book.remove(writer.book['Sheet1'])
+                    except KeyError:
+                        pass
+                    writer.save()
+            except PermissionError:
+                print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
 
-        print(df)
-        print(critperc)
-        df.plot(x='Density', y='Frequency_Reach_Bottom', kind='scatter')
-        plt.title("Water Percolation - " + str(i) + " Realisations - " + str(N) + "x" + str(N) + " Grid")
-        plt.xlim(0, 1)
-        plt.ylim(0, 1)
-        plt.xlabel('Density of rocks in the sand')
-        plt.ylabel('Expectation that the bottom is reached')
-        plt.xticks(np.arange(0, 1+step, step=0.1))
-        plt.yticks(np.arange(0, 1.1, step=0.1))
-        plt.show()
+            print(df)
+            print(critperc)
+            df.plot(x='Density', y='Frequency_Reach_Bottom', kind='scatter')
+            plt.title("Water Percolation - " + str(i) + " Realisations - " + str(N) + "x" + str(N) + " Grid")
+            plt.xlim(0, 1)
+            plt.ylim(0, 1)
+            plt.xlabel('Density of rocks in the sand')
+            plt.ylabel('Expectation that the bottom is reached')
+            plt.xticks(np.arange(0, 1+step, step=0.1))
+            plt.yticks(np.arange(0, 1.1, step=0.1))
+            plt.show()
 
 
 def draw(data, j, p, N):
