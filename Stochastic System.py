@@ -26,18 +26,16 @@ Created on Thu Feb 13 20:23:33 2020
 ## Use simulation to calculate the average depth to which the liquid
 ## drops before getting stuck, and the proportion of the time that the
 ## drop reaches the bottom layer.
-
 import numpy as np
 import matplotlib.pyplot as plt
-#import matplotlib.animation as animation
-from matplotlib import animation, colors
+from matplotlib import colors
 
 np.set_printoptions(threshold=np.inf)
 ## The density of rocks in the sand.
 p = 1 - 0.599
 
 ## The number of simulation replications.
-nrep = 1e3
+nrep = 1e2
 
 ## The total depth across the simulation replications.
 TD = 0
@@ -46,63 +44,53 @@ TD = 0
 NB = 0
 
 # Grid size
-N = 12
+N = 20
 
 
 def simulation():
     ## Simulation replications.
     for i in range(int(nrep)):
         ## Randomly lay out the rocks.
-        M = (1*(np.random.uniform(0,1,size=N*N) < p)).reshape(N,N)
+        M = (1 * (np.random.uniform(0, 1, size=N * N) < p)).reshape(N, N)
+
         ## The initial position of the droplet.
         r = 0
-        c = int(N/2) -1
+        c = int(N / 2) - 1
         M[r, c] = 2
-        print(M)
+
         ## Let the droplet percolate through the rocks.
-        while r < N-1:
-            draw(M)
-            print(M)
-            ## Always go straight down if possible.
-            if (M[r+1,c] == 0):
-                r = r+1
+        while r < N - 1:
+                ## Always go straight down if possible.
+            if (M[r + 1, c] == 0):
+                r = r + 1
                 M[r, c] = 2
-                draw(M)
-            ## Next try down/left.
-            elif ( (c>1) & (M[r+1,c-1] == 0) ) :
-                r = r+1
-                c = c-1
+                ## Next try down/left.
+            elif ((c > 1) & (M[r + 1, c - 1] == 0)):
+                r = r + 1
+                c = c - 1
                 M[r, c] = 2
-                draw(M)
-            ## Next try down/right.
-            elif ( (c<N) & (M[r+1,c+1] == 0) ) :
-                r = r+1
-                c = c+1
+                ## Next try down/right.
+            elif ((c < N) & (M[r + 1, c + 1] == 0)):
+                r = r + 1
+                c = c + 1
                 M[r, c] = 2
-                draw(M)
-            ## Next try right.
-            elif ( (c<N) & (M[r,c+1] == 0) ) :
-                c = c+1
+                ## Next try right.
+            elif ((c < N) & (M[r, c + 1] == 0)):
+                c = c + 1
                 M[r, c] = 2
-                draw(M)
-            ## We're stuck
+                ## We're stuck
             else:
-                print("exit")
-                draw(M)
                 break
-        draw(M)
-        draw(M)
 
         ## Keep track of how often we reach the bottom.
         if (r == N - 1):
-            M[N-1,c] = 2
-            draw(M)
             global NB
             NB = NB + 1
 
         ## Keep track of the total of the final depths.
         global TD
         TD = TD + r
+        draw(M)
 
 
 def draw(data):
@@ -125,7 +113,15 @@ def main():
 
 if __name__ == '__main__':
     main()
+    ## The estimated probability that we reach the bottom.
+    NBprob = NB / nrep
+
+    ## The average depth that is reached.
+    TDavg = TD / nrep
+
     print("The grid size is: " + str(N) + " X " + str(N) + " squared")
     print("The number of simulation replications is: " + str(nrep))
     print("\nThe total depth across the simulation replications is: " + str(TD))
     print("The number of times that the bottom is reached: " + str(NB))
+    print("The estimated probability that we reach the bottom is: " + str(NBprob))
+    print("The average depth that is reached is: " + str(TDavg) + " of " + str(N) + " layers")
