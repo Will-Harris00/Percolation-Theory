@@ -39,30 +39,22 @@ filename = "dynamic_images.html"
 writer = animation.HTMLWriter(fps=4)
 # ensure matrix is not truncated
 np.set_printoptions(threshold=np.inf)
-## The density of rocks in the sand.
-p = 1 - 0.599
-
-## The number of simulation replications.
-nrep = 1e2
-
-## The total depth across the simulation replications.
-TD = 0
-
-## The number of times that the bottom is reached.
-NB = 0
-
-# Grid size
-N = 100
-
+fig = plt.figure()
 # array of images
 ims = []
-fig = plt.figure()
-
-# Would you like to animate the simulations, please note this could take a while
-animate = True
 
 
-def simulation(animate):
+def simulation(animate, p, N, nrep):
+    # empties animation array after each change in density of rocks in the sand.
+    global ims
+    ims = []
+
+    ## The total depth across the simulation replications.
+    TD = 0
+
+    ## The number of times that the bottom is reached.
+    NB = 0
+
     ## Simulation replications.
     for i in range(int(nrep)):
         ## Randomly lay out the rocks.
@@ -115,11 +107,9 @@ def simulation(animate):
 
         ## Keep track of how often we reach the bottom.
         if (r == N - 1):
-            global NB
             NB = NB + 1
 
         ## Keep track of the total of the final depths.
-        global TD
         TD = TD + r
 
         # Draws the final frame of each simulation for a number of realisations
@@ -132,6 +122,38 @@ def simulation(animate):
         for i in range(5):
             draw(M)
         create_animation()
+    return NB, TD
+
+
+def main():
+    # Would you like to animate the simulations, please note this could take a while
+    animate = False
+    ## The density of rocks in the sand.
+    p = 1
+    # Grid size
+    N = 20
+    ## The number of simulation replications.
+    nrep = 1e2
+    print("\nThe grid size is: " + str(N) + "x" + str(N))
+    print("The number of simulation replications is: " + str(nrep))
+    while p > 0:
+        p = round(p, 2)
+        sim = simulation(animate, p, N, nrep)
+        NB = sim[0]
+        TD = sim[1]
+        ## The estimated probability that we reach the bottom.
+        NBprob = NB / nrep
+
+        ## The average depth that is reached.
+        TDavg = TD / nrep
+        print("\nThe density of rocks in the sand is: " + str(p))
+        print("The total depth across the simulation replications is: " + str(TD))
+        print("The number of times that the bottom is reached: " + str(NB))
+        print("The estimated probability that we reach the bottom is: " + str(NBprob))
+        print("The average depth that is reached is: " + str(TDavg) + " of " + str(N) + " layers")
+        if animate == True:
+            create_animation()
+        p -= 0.1
 
 
 def draw(data):
@@ -171,23 +193,5 @@ def create_animation():
             print("You will need to manually open the html file")
 
 
-def main():
-    simulation(animate)
-    if animate == True:
-        create_animation()
-
-
 if __name__ == '__main__':
     main()
-    ## The estimated probability that we reach the bottom.
-    NBprob = NB / nrep
-
-    ## The average depth that is reached.
-    TDavg = TD / nrep
-
-    print("The grid size is: " + str(N) + " X " + str(N) + " squared")
-    print("The number of simulation replications is: " + str(nrep))
-    print("\nThe total depth across the simulation replications is: " + str(TD))
-    print("The number of times that the bottom is reached: " + str(NB))
-    print("The estimated probability that we reach the bottom is: " + str(NBprob))
-    print("The average depth that is reached is: " + str(TDavg) + " of " + str(N) + " layers")
