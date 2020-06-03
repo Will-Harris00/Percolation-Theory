@@ -36,14 +36,14 @@ import shlex
 
 filename = "dynamic_images.html"
 # change the fps to speed up or slow down the animation
-writer = animation.HTMLWriter(fps=11)
+writer = animation.HTMLWriter(fps=4)
 # ensure matrix is not truncated
 np.set_printoptions(threshold=np.inf)
 ## The density of rocks in the sand.
 p = 1 - 0.599
 
 ## The number of simulation replications.
-nrep = 10
+nrep = 1e2
 
 ## The total depth across the simulation replications.
 TD = 0
@@ -52,7 +52,7 @@ TD = 0
 NB = 0
 
 # Grid size
-N = 20
+N = 100
 
 # array of images
 ims = []
@@ -75,7 +75,6 @@ def simulation(animate):
         ## Checks whether the user wishes to animate the simulations
         if animate == True:
             M[r, c] = 2
-            draw(M)
 
         ## Let the droplet percolate through the rocks.
         while r < N - 1:
@@ -84,27 +83,27 @@ def simulation(animate):
                 if (M[r + 1, c] == 0):
                     r = r + 1
                     if animate == True:
-                        water(M, r, c)
+                        M[r, c] = 2
 
                 ## Next try down/left.
                 elif ((c > 1) & (M[r + 1, c - 1] == 0)):
                     r = r + 1
                     c = c - 1
                     if animate == True:
-                        water(M, r, c)
+                        M[r, c] = 2
 
                 ## Next try down/right.
                 elif ((c < N) & (M[r + 1, c + 1] == 0)):
                     r = r + 1
                     c = c + 1
                     if animate == True:
-                        water(M, r, c)
+                        M[r, c] = 2
 
                 ## Next try right.
                 elif ((c < N) & (M[r, c + 1] == 0)):
                     c = c + 1
                     if animate == True:
-                        water(M, r, c)
+                        M[r, c] = 2
 
                 ## We're stuck
                 else:
@@ -123,17 +122,16 @@ def simulation(animate):
         global TD
         TD = TD + r
 
-        ## Draws the final frame of each simulation multiple times
-        ## to allow enough time for the user to pause the animation
+        # Draws the final frame of each simulation for a number of realisations
         if animate == True:
-            for i in range(5):
-                draw(M)
+            draw(M)
 
-
-def water(M, r, c):
-    ## replaces any number in the matrix where water occurs with the number 2
-    M[r, c] = 2
-    draw(M)
+    ## Draws the final frame of the last simulation for number of realisations
+    ## to allow enough time for the user to pause the animation
+    if animate == True:
+        for i in range(5):
+            draw(M)
+        create_animation()
 
 
 def draw(data):
