@@ -30,13 +30,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import colors
+import os
+from sys import platform
+import shlex
 
+filename = "dynamic_images.html"
+# change the fps to speed up or slow down the animation
+writer = animation.HTMLWriter(fps=11)
+# ensure matrix is not truncated
 np.set_printoptions(threshold=np.inf)
 ## The density of rocks in the sand.
 p = 1 - 0.599
 
 ## The number of simulation replications.
-nrep = 1
+nrep = 10
 
 ## The total depth across the simulation replications.
 TD = 0
@@ -100,13 +107,24 @@ def simulation():
         ## Keep track of the total of the final depths.
         global TD
         TD = TD + r
+
+        # Draws the final frame of each simulation multiple times
+        # to allow enough time for the user to pause the animation
         draw(M)
-        animate()
+        draw(M)
+        draw(M)
+        draw(M)
+        draw(M)
 
 
 def draw(data):
     # Colours for visualization: gold for sand, grey for rock and blue for water.
+    # module is poorly coded so colours and boundary array each need one more
+    # element than there are colours in the animation and numbers in the matrix.
     colors_list = ['gold', 'grey', 'black', 'blue']
+    # observe that the colour black appears nowhere in the animation and neither
+    # does the number three appear anywhere within the matrix,
+    # i do not know why the developer indexes the arrays incorrectly.
     # create discrete colormap
     cmap = colors.ListedColormap(colors_list)
     bounds = [0, 1, 2, 3]
@@ -114,20 +132,31 @@ def draw(data):
     global ims
     plt.xticks([])
     plt.yticks([])
-    im = plt.imshow(data, cmap=cmap, norm=norm)
+    im = plt.imshow(data, cmap=cmap, norm=norm, animated=True)
     ims.append([im])
 
 
 def animate():
     print("\nCreating animation, please wait...")
-    print(ims)
     ani = animation.ArtistAnimation(fig, ims, blit=True)
-    ani.save('dynamic_images.html')
-    plt.show()
+    ani.save(filename, writer=writer)
+    # OS X
+    if platform == "darwin":
+        try:
+            os.system("open " + shlex.quote(filename))
+        except:
+            print("You will need to manually open the html file")
+    # Windows
+    elif platform == "win32":
+        try:
+            os.system("start " + filename)
+        except:
+            print("You will need to manually open the html file")
 
 
 def main():
     simulation()
+    animate()
 
 
 if __name__ == '__main__':
