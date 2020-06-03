@@ -43,7 +43,7 @@ np.set_printoptions(threshold=np.inf)
 p = 1 - 0.599
 
 ## The number of simulation replications.
-nrep = 10
+nrep = 1e2
 
 ## The total depth across the simulation replications.
 TD = 0
@@ -83,28 +83,24 @@ def simulation(animate):
             if (M[r + 1, c] == 0):
                 r = r + 1
                 if animate == True:
-                    M[r, c] = 2
-                    draw(M)
+                    water(M, r, c)
                 ## Next try down/left.
             elif ((c > 1) & (M[r + 1, c - 1] == 0)):
                 r = r + 1
                 c = c - 1
                 if animate == True:
-                    M[r, c] = 2
-                    draw(M)
+                    water(M, r, c)
                 ## Next try down/right.
             elif ((c < N) & (M[r + 1, c + 1] == 0)):
                 r = r + 1
                 c = c + 1
                 if animate == True:
-                    M[r, c] = 2
-                    draw(M)
+                    water(M, r, c)
                 ## Next try right.
             elif ((c < N) & (M[r, c + 1] == 0)):
                 c = c + 1
                 if animate == True:
-                    M[r, c] = 2
-                    draw(M)
+                    water(M, r, c)
                 ## We're stuck
             else:
                 break
@@ -118,11 +114,17 @@ def simulation(animate):
         global TD
         TD = TD + r
 
-        # Draws the final frame of each simulation multiple times
-        # to allow enough time for the user to pause the animation
+        ## Draws the final frame of each simulation multiple times
+        ## to allow enough time for the user to pause the animation
         if animate == True:
             for i in range(5):
                 draw(M)
+
+
+def water(M, r, c):
+    ## replaces any number in the matrix where water occurs with the number 2
+    M[r, c] = 2
+    draw(M)
 
 
 def draw(data):
