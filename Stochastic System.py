@@ -58,8 +58,11 @@ N = 20
 ims = []
 fig = plt.figure()
 
+# Would you like to animate the simulations, please note this could take a while
+animate = True
 
-def simulation():
+
+def simulation(animate):
     ## Simulation replications.
     for i in range(int(nrep)):
         ## Randomly lay out the rocks.
@@ -68,33 +71,40 @@ def simulation():
         ## The initial position of the droplet.
         r = 0
         c = int(N / 2) - 1
-        M[r, c] = 2
-        draw(M)
+
+        ## Checks whether the user wishes to animate the simulations
+        if animate == True:
+            M[r, c] = 2
+            draw(M)
 
         ## Let the droplet percolate through the rocks.
         while r < N - 1:
                 ## Always go straight down if possible.
             if (M[r + 1, c] == 0):
                 r = r + 1
-                M[r, c] = 2
-                draw(M)
+                if animate == True:
+                    M[r, c] = 2
+                    draw(M)
                 ## Next try down/left.
             elif ((c > 1) & (M[r + 1, c - 1] == 0)):
                 r = r + 1
                 c = c - 1
-                M[r, c] = 2
-                draw(M)
+                if animate == True:
+                    M[r, c] = 2
+                    draw(M)
                 ## Next try down/right.
             elif ((c < N) & (M[r + 1, c + 1] == 0)):
                 r = r + 1
                 c = c + 1
-                M[r, c] = 2
-                draw(M)
+                if animate == True:
+                    M[r, c] = 2
+                    draw(M)
                 ## Next try right.
             elif ((c < N) & (M[r, c + 1] == 0)):
                 c = c + 1
-                M[r, c] = 2
-                draw(M)
+                if animate == True:
+                    M[r, c] = 2
+                    draw(M)
                 ## We're stuck
             else:
                 break
@@ -110,11 +120,9 @@ def simulation():
 
         # Draws the final frame of each simulation multiple times
         # to allow enough time for the user to pause the animation
-        draw(M)
-        draw(M)
-        draw(M)
-        draw(M)
-        draw(M)
+        if animate == True:
+            for i in range(5):
+                draw(M)
 
 
 def draw(data):
@@ -136,7 +144,7 @@ def draw(data):
     ims.append([im])
 
 
-def animate():
+def create_animation():
     print("\nCreating animation, please wait...")
     ani = animation.ArtistAnimation(fig, ims, blit=True)
     ani.save(filename, writer=writer)
@@ -155,8 +163,9 @@ def animate():
 
 
 def main():
-    simulation()
-    animate()
+    simulation(animate)
+    if animate == True:
+        create_animation()
 
 
 if __name__ == '__main__':
