@@ -62,7 +62,7 @@ def simulation(p, N, nrep, animate, separate):
     NB = 0
 
     ## Simulation replications.
-    for i in range(int(nrep)):
+    for j in range(int(nrep)):
         ## Randomly lay out the rocks.
         M = (1 * (np.random.uniform(0, 1, size=N * N) < p)).reshape(N, N)
 
@@ -118,15 +118,11 @@ def simulation(p, N, nrep, animate, separate):
         ## Keep track of the total of the final depths.
         TD = TD + r
 
-        # Draws the final frame of each simulation for a number of realisations
-        if animate == True:
-            draw(M)
-
-    ## Draws the final frame of the last simulation for number of realisations
+    ## Draws the final frame of each simulation multiple times
     ## to allow enough time for the user to pause the animation
     if animate == True:
         for i in range(5):
-            draw(M)
+            draw(M, j+1, p, N)
         create_animation()
     return NB, TD
 
@@ -145,11 +141,12 @@ def main():
     step = 0.01
     print("\nThe grid size is: " + str(N) + "x" + str(N))
     for i in nrep:
+        pc_boolean = True
         i = round(i)
         print("\nRunning simulation with " + str(i) + " realisations")
         ## The density of rocks in the sand.
         p = 1
-        df = pd.DataFrame(columns=["Density", "Number_Bottom", "Predicted_Bottoms", "Total_Depth", "Average_Depth"])
+        df = pd.DataFrame(columns=["Density", "Number_Bottom", "Frequency_Reach_Bottom", "Total_Depth", "Average_Depth"])
         j = 0
         while p > 0:
             p = round(p, 2)
@@ -165,6 +162,10 @@ def main():
 
             df.loc[j] = [p, NB, NBprob, TD, TDavg]
             j += 1
+
+            if pc_boolean and NB >= 1:
+                critperc = p
+                pc_boolean = False
             p -= step
 
         if nrep.index(i) == 0:
@@ -185,18 +186,19 @@ def main():
             print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
 
         print(df)
-        df.plot(x='Density', y='Number_Bottom', kind='scatter')
+        print(critperc)
+        df.plot(x='Density', y='Frequency_Reach_Bottom', kind='scatter')
         plt.title("Water Percolation - " + str(i) + " Realisations - " + str(N) + "x" + str(N) + " Grid")
         plt.xlim(0, 1)
-        plt.ylim(0, i)
+        plt.ylim(0, 1)
         plt.xlabel('Density of rocks in the sand')
-        plt.ylabel('Number of times the water reaches the bottom')
+        plt.ylabel('Expectation that the bottom is reached')
         plt.xticks(np.arange(0, 1+step, step=0.1))
-        plt.yticks(np.arange(0, i+1, step=i/10))
+        plt.yticks(np.arange(0, 1.1, step=0.1))
         plt.show()
 
 
-def draw(data):
+def draw(data, j, p, N):
     # Colours for visualization: gold for sand, grey for rock and blue for water.
     # module is poorly coded so colours and boundary array each need one more
     # element than there are colours in the animation and numbers in the matrix.
@@ -211,6 +213,8 @@ def draw(data):
     global ims
     plt.xticks([])
     plt.yticks([])
+    plt.title("Density of rock in the sand: " + str(p) + "\n Number of realisations: "
+              + str(j) + "\nSize of matrix: " + str(N) + "x" + str(N))
     im = plt.imshow(data, cmap=cmap, norm=norm, animated=True)
     ims.append([im])
 
