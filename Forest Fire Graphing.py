@@ -36,12 +36,16 @@ from sys import platform
 import shlex
 from numpy.random import choice
 import pandas as pd
+from openpyxl import load_workbook
 
 filename = "dynamic_images.html"
+excel_file = "forest.xlsx"
 # change the fps to speed up or slow down the animation
 writer = animation.HTMLWriter(fps=12)
-# ensure matrix is not truncated
+# ensure matrix and data frame are not truncated
 np.set_printoptions(threshold=np.inf)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
 fig = plt.figure()
 # array of images
 ims = []
@@ -107,22 +111,23 @@ def simulation(p, ny, nx, nrep, animate, separate):
 
 def main():
     # Would you like to animate the simulations, please note this could take a while
-    animate = True
+    animate = False
     # Determines whether to create new animation at each level of density or to
     # append the new frames to the existing animation.
-    separate = False
+    separate = True
     # Forest size (number of cells in x and y directions).
     ny, nx = 10, 10
     ## The number of simulation replications.
-    nrep = [1e1,1e2]
+    nrep = [1e1,1e2,1e3,1e4]
     # By how much is p decremented for each realisation
-    step = 0.1
+    step = 0.01
     print("\nThe grid size is: " + str(ny) + "x" + str(nx))
     for i in nrep:
+        i = round(i)
         print("\nRunning simulation with " + str(i) + " realisations")
         # The density of mud in the forest not occupied by trees
         p = 1
-        df = pd.DataFrame(columns=["Density", "Number_Edge"])
+        df = pd.DataFrame(columns=["Density", "Number_Edge", "Predicted_Edges", "Total_Depth", "Average_Depth"])
         j = 0
         while p > 0:
             p -= step
@@ -131,29 +136,36 @@ def main():
             NB = sim[0]
             TD = sim[1]
             ## The estimated probability that we reach the edge.
+            ## Frequency with which the edge is reached for a given probability
             NBprob = NB / i
 
             ## The average distance that is reached.
             TDavg = TD / i
 
-            df.loc[j] = [p, NB]
+            df.loc[j] = [p, NB, NBprob, TD, TDavg]
             j += 1
-            print("\nThe density of trees in the mud is: " + str(p))
-            print("The total depth across the simulation replications is: " + str(TD))
-            print("The number of times that the edge is reached: " + str(NB))
-            print("The estimated probability that we reach the edge is: " + str(NBprob))
-            print("The average depth that is reached is: "
-                  + str(TDavg) + " of " + str(ny) + " layers")
             ## Draws the final frame of each simulation multiple times
             ## to allow enough time for the user to pause the animation
             if animate == True:
                 create_animation()
+        # this version required a preexisting excel file matching the name above
+        try:
+            with pd.ExcelWriter(excel_file, mode='x') as writer:
+                writer.save()
+            with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
+                writer.book = load_workbook(excel_file)
+                sheetName = str(i) + 'realisations' + str(ny) + "by" + str(nx)
+                df.to_excel(writer, sheetName, index=False, header=True)
+                writer.save()
+        except PermissionError:
+            print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
+
         print(df)
         df.plot(x='Density', y='Number_Edge', kind='scatter')
         plt.xlim(0, 1)
         plt.ylim(0, i)
-        plt.xticks(np.arange(0, 1 + step, step=0.1))
-        plt.yticks(np.arange(0, i + 1, step=i / 10))
+        plt.xticks(np.arange(0, 1+step, step=0.1))
+        plt.yticks(np.arange(0, i+1, step=i/10))
         plt.show()
 
 
@@ -177,7 +189,6 @@ def draw(data):
 
 
 def create_animation():
-    print(ims)
     print("\nCreating animation, please wait...")
     ani = animation.ArtistAnimation(fig, ims, blit=True)
     ani.save(filename, writer=writer)
