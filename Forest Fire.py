@@ -77,12 +77,22 @@ def iterate(X, ny, nx, f):
             for iy in range(1, ny - 1):
                 if X[iy, ix] == 2:
                     for dx, dy in neighbourhood:
-                        if X[iy + dy, ix + dx] == 0:
-                            selection = choice(set_alight, p=weighting)
-                            X[iy + dy, ix + dx] = selection
-                            draw(X)
-                            break
-
+                        try:
+                            if X[iy + dy, ix + dx] == 0:
+                                selection = choice(set_alight, p=weighting)
+                                X[iy + dy, ix + dx] = selection
+                                draw(X)
+                                break
+                            else:
+                                rand = True
+                                while rand:
+                                    ix = np.random.randint(0, ny)
+                                    iy = np.random.randint(0, nx)
+                                    if X[iy + dy, ix + dx] == 0:
+                                        X[iy + dy, ix + dx] = 2
+                                        rand = False
+                        except IndexError:
+                            pass
     draw(X)
     create_animation()
 
