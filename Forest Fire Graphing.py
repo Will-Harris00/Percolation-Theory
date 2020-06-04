@@ -59,55 +59,49 @@ def simulation(p, ny, nx, nrep, animate, separate):
     ## The number of times that the edge is reached.
     NB = 0
 
-    print("\nRunning simulation:")
-    # Initialize the forest grid.
-    X = np.random.choice([0, 1], size=ny * nx, p=[1-p, p]).reshape(ny, nx)
-    # Starting position of fire at centre of grid
-    X[(ny//2), (nx//2)] = 2
     # Displacements from a cell to its eight nearest neighbours
     neighbourhood = ((-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0))
+    ## Simulation replications.
+    for i in range(int(nrep)):
+        # Initialize the forest grid.
+        X = np.random.choice([0, 1], size=ny * nx, p=[1-p, p]).reshape(ny, nx)
+        # Starting position of fire at centre of grid
+        X[(ny//2), (nx//2)] = 2
 
-    """Iterate the forest according to the forest-fire rules."""
-    if animate == True:
-        draw(X)
-    iy, ix = ny // 2, nx // 2
-    positions = []
-    positions.append([iy, ix])
-    boolean = True
-    while True:
-        for i in positions:
-            for dx, dy in neighbourhood:
-                try:
-                    ## Keep track of how often we reach the edges.
-                    if boolean:
-                        if ((i[0] + dy == ny - 1) or (i[1] + dx == nx - 1)) and X[i[0] + dy, i[1] + dx] == 0:
-                            X[i[0] + dy, i[1] + dx] = 2
-                            ## Draws the final frame of each simulation multiple times
-                            ## to allow enough time for the user to pause the animation
-                            if animate == True:
-                                for i in range(5):
-                                    draw(X)
-                                create_animation()
-                            boolean = False
-                            break
-                        else:
-                            if X[i[0] + dy, i[1] + dx] == 0:
+        """Iterate the forest according to the forest-fire rules."""
+
+        iy, ix = ny // 2, nx // 2
+        positions = []
+        positions.append([iy, ix])
+        boolean = True
+        if animate == True:
+            draw(X)
+        while True:
+            for i in positions:
+                for dx, dy in neighbourhood:
+                    try:
+                        ## Keep track of how often we reach the edges.
+                        if boolean:
+                            if ((i[0] + dy == ny - 1) or (i[1] + dx == nx - 1)) \
+                                    and X[i[0] + dy, i[1] + dx] == 0:
                                 X[i[0] + dy, i[1] + dx] = 2
-                                positions.append([i[0] + dy, i[1] + dx])
-                                if animate == True:
-                                    draw(X)
-                    continue
-                except IndexError:
-                    pass
-        if boolean != False:
-            ## Draws the final frame of each simulation multiple times
-            ## to allow enough time for the user to pause the animation
+                                NB += 1
+                                boolean = False
+                                break
+                            else:
+                                if X[i[0] + dy, i[1] + dx] == 0:
+                                    X[i[0] + dy, i[1] + dx] = 2
+                                    TD = TD + 1
+                                    positions.append([i[0] + dy, i[1] + dx])
+                                    if animate == True:
+                                        draw(X)
+                        continue
+                    except IndexError:
+                        pass
             if animate == True:
-                for i in range(5):
+               for i in range(5):
                     draw(X)
-                create_animation()
             break
-        break
     return NB, TD
 
 
@@ -116,24 +110,22 @@ def main():
     animate = True
     # Determines whether to create new animation at each level of density or to
     # append the new frames to the existing animation.
-    separate = True
+    separate = False
     # Forest size (number of cells in x and y directions).
     ny, nx = 10, 10
     ## The number of simulation replications.
     nrep = [1e1,1e2]
     # By how much is p decremented for each realisation
     step = 0.1
-    print("\nThe grid size is: " + str(ny) + " x " + str(nx))
-    print("The number of simulation replications is: " + str(nrep))
+    print("\nThe grid size is: " + str(ny) + "x" + str(nx))
     for i in nrep:
+        print("\nRunning simulation with " + str(i) + " realisations")
         # The density of mud in the forest not occupied by trees
         p = 1
         df = pd.DataFrame(columns=["Density", "Number_Edge"])
         j = 0
         while p > 0:
             p -= step
-            print(p)
-            print(nrep)
             p = round(p, 2)
             sim = simulation(p, ny, nx, i, animate, separate)
             NB = sim[0]
@@ -143,8 +135,8 @@ def main():
 
             ## The average distance that is reached.
             TDavg = TD / i
-            x = 1 - p
-            df.loc[j] = [x, NB]
+
+            df.loc[j] = [p, NB]
             j += 1
             print("\nThe density of trees in the mud is: " + str(p))
             print("The total depth across the simulation replications is: " + str(TD))
@@ -152,12 +144,16 @@ def main():
             print("The estimated probability that we reach the edge is: " + str(NBprob))
             print("The average depth that is reached is: "
                   + str(TDavg) + " of " + str(ny) + " layers")
+            ## Draws the final frame of each simulation multiple times
+            ## to allow enough time for the user to pause the animation
+            if animate == True:
+                create_animation()
         print(df)
         df.plot(x='Density', y='Number_Edge', kind='scatter')
         plt.xlim(0, 1)
         plt.ylim(0, i)
-        plt.xticks(np.arange(0, 1+step, step=0.1))
-        plt.yticks(np.arange(0, i+1, step=i/10))
+        plt.xticks(np.arange(0, 1 + step, step=0.1))
+        plt.yticks(np.arange(0, i + 1, step=i / 10))
         plt.show()
 
 
