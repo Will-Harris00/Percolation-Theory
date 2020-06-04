@@ -49,7 +49,7 @@ ims = []
 
 def simulation(nrep):
     # The density of mud in the forest not occupied by trees
-    p = 0.6
+    p = 0.4
     # Forest size (number of cells in x and y directions).
     ny, nx = 10, 10
 
@@ -73,26 +73,30 @@ def simulation(nrep):
         iy, ix = ny // 2, nx // 2
         positions = []
         positions.append([iy, ix])
+        boolean = True
         while True:
             for i in positions:
-                if i[0] == ny - 1 or i[1] == nx - 1:
-                    create_animation()
-                    print("Reached Edge")
-                    break
-                print(X)
                 for dx, dy in neighbourhood:
                     try:
                         ## Keep track of how often we reach the edges.
                         if X[i[0] + dy, i[1] + dx] == 0:
                             X[i[0] + dy, i[1] + dx] = 2
                             draw(X)
-                            positions.append([i[0] + dy, i[1] + dx])
+                            if i[0] + dy == ny - 1  or i[1] + dx == nx - 1:
+                                print(str(i[0] + dy) + " = " + str(ny - 1) + " or " + str(
+                                    i[0] + dy) + " = " + str(nx - 1))
+                                create_animation()
+                                print("Reached Edge")
+                                boolean = False
+                                break
+                            else:
+                                positions.append([i[0] + dy, i[1] + dx])
                         continue
                     except IndexError:
                         pass
-                continue
-            print("Fire stopped spreading")
-            create_animation()
+            if boolean != False:
+                print("Fire stopped spreading")
+                create_animation()
             break
 
 def draw(data):
