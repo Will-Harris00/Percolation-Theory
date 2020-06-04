@@ -38,7 +38,6 @@ import pandas as pd
 from openpyxl import load_workbook
 
 filename = "dynamic_images.html"
-excel_file = "forest.xlsx"
 # change the fps to speed up or slow down the animation
 writer = animation.HTMLWriter(fps=12)
 # ensure matrix and data frame are not truncated
@@ -118,71 +117,74 @@ def main():
     # append the new frames to the existing animation.
     separate = True
     # Forest size (number of cells in x and y directions).
-    ny, nx = 10, 10
+    sizes = [10,50,100,200,400]
     ## The number of simulation replications.
-    nrep = [1e1,1e2,1e3,1e4]
+    nrep = [100,500,1000,2000,4000]
     # By how much is p decremented for each realisation
-    step = 0.01
-    print("\nThe grid size is: " + str(ny) + "x" + str(nx))
-    for i in nrep:
-        pc_boolean = True
-        i = round(i)
-        print("\nRunning simulation with " + str(i) + " realisations")
-        ## The density of mud in the forest not occupied by trees
-        p = 1
-        df = pd.DataFrame(columns=["Density", "Number_Edge", "Frequency_Reach_Edge"])
-        j = 0
-        while p > 0:
-            p -= step
-            p = round(p, 2)
-            sim = simulation(p, ny, nx, i, animate, separate)
-            NB = sim
-            #TD = sim[1]
-            ## The estimated probability that we reach the edge.
-            ## Frequency with which the edge is reached for a given probability
-            NBprob = NB / i
+    step = 0.1
+    for n in sizes:
+        ny, nx  = n, n
+        excel_file = "forest" + str(n) + ".xlsx"
+        print("\nThe grid size is: " + str(ny) + "x" + str(nx))
+        for i in nrep:
+            pc_boolean = True
+            i = round(i)
+            print("\nRunning simulation with " + str(i) + " realisations")
+            # The density of mud in the forest not occupied by trees
+            p = 1
+            df = pd.DataFrame(columns=["Density", "Number_Edge", "Frequency_Reach_Edge"])
+            j = 0
+            while p > 0:
+                p -= step
+                p = round(p, 2)
+                sim = simulation(p, ny, nx, i, animate, separate)
+                NB = sim
+                #TD = sim[1]
+                ## The estimated probability that we reach the edge.
+                ## Frequency with which the edge is reached at each probability
+                NBprob = NB / i
 
-            ## The average distance that is reached.
-            #TDavg = TD / i
+                ## The average distance that is reached.
+                #TDavg = TD / i
 
-            df.loc[j] = [p, NB, NBprob]
-            j += 1
-            ## Draws the final frame of each simulation multiple times
-            ## to allow enough time for the user to pause the animation
-            if animate == True:
-                create_animation()
+                df.loc[j] = [p, NB, NBprob]
+                j += 1
+                ## Draws the final frame of each simulation multiple times
+                ## to allow enough time for the user to pause the animation
+                if animate == True:
+                    create_animation()
 
-            if pc_boolean and NB >= 1:
-                critperc = p
-                pc_boolean = False
-        if nrep.index(i) == 0:
-            with pd.ExcelWriter(excel_file) as writer:
-                writer.save()
-                print("Created the excel file " + str(excel_file))
-        try:
-            with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
-                writer.book = load_workbook(excel_file)
-                sheetName = str(i) + 'realisations' + str(ny) + "by" + str(nx)
-                df.to_excel(writer, sheetName, index=False, header=True)
-                try:
-                    writer.book.remove(writer.book['Sheet1'])
-                except KeyError:
-                    pass
-                writer.save()
-        except PermissionError:
-            print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
+                if pc_boolean and NB >= 1:
+                    critperc = p
+                    pc_boolean = False
+            if nrep.index(i) == 0:
+                with pd.ExcelWriter(excel_file) as writer:
+                    writer.save()
+                    print("Created the excel file " + str(excel_file))
+            try:
+                with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
+                    writer.book = load_workbook(excel_file)
+                    sheetName = str(i) + 'realisations' + str(ny) + "by" + str(nx)
+                    df.to_excel(writer, sheetName, index=False, header=True)
+                    try:
+                        writer.book.remove(writer.book['Sheet1'])
+                    except KeyError:
+                        pass
+                    writer.save()
+            except PermissionError:
+                print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
 
-        print(df)
-        print(critperc)
-        df.plot(x='Density', y='Frequency_Reach_Edge', kind='scatter')
-        plt.title("Forest Fire Percolation - " + str(i) + " Realisations - " + str(ny) + "x" + str(nx) + " Grid")
-        plt.xlim(0, 1)
-        plt.ylim(0, 1)
-        plt.xlabel('Density of mud in the forest')
-        plt.ylabel('Expectation that the edge is reached')
-        plt.xticks(np.arange(0, 1+step, step=0.1))
-        plt.yticks(np.arange(0, 1.1, step=0.1))
-        plt.show()
+            print(df)
+            print(critperc)
+            df.plot(x='Density', y='Frequency_Reach_Edge', kind='scatter')
+            plt.title("Forest Fire Percolation - " + str(i) + " Realisations - " + str(n) + "x" + str(n) + " Grid")
+            plt.xlim(0, 1)
+            plt.ylim(0, 1)
+            plt.xlabel('Density of mud in the forest')
+            plt.ylabel('Expectation that the edge is reached')
+            plt.xticks(np.arange(0, 1+step, step=0.1))
+            plt.yticks(np.arange(0, 1.1, step=0.1))
+            plt.show()
 
 
 def draw(data, j, p, ny, nx):
