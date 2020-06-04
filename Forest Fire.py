@@ -34,9 +34,10 @@ from matplotlib import colors
 import os
 from sys import platform
 import shlex
+from numpy.random import choice
 
 filename = "dynamic_images.html"
-# change the fps to speed up or slow down the animation in milliseconds
+# change the fps to speed up or slow down the animation
 writer = animation.HTMLWriter(fps=4)
 # ensure matrix is not truncated
 np.set_printoptions(threshold=np.inf)
@@ -47,60 +48,53 @@ fig = plt.figure()
 ims = []
 
 def simulation(nrep):
-    # The initial fraction of the forest occupied by trees.
-    forest_fraction = 0.8
-    # Probability of new tree growth per empty cell, and of lightning strike.
-    p, f = 0, 0.1
+    # The density of mud in the forest not occupied by trees
+    p = 0.6
+    # Probability of a tree catching fire.
+    f = 0.95
     # Forest size (number of cells in x and y directions).
-    nx, ny = 10, 10
-    try:
-        for i in range(int(nrep)):
-            print(i)
-            # Initialize the forest grid.
-            X = np.zeros((ny, nx))
-            X[1:ny - 1, 1:nx - 1] = np.random.randint(0, 2, size=(ny - 2, nx - 2))
-            X[1:ny - 1, 1:nx - 1] = np.random.random(size=(ny - 2, nx - 2)) < forest_fraction
-            draw(X)
-            iterate(X, ny, nx, p, f)
-    except MemoryError:
-        pass
+    ny, nx = 5, 5
+    for i in range(int(nrep)):
+        # Initialize the forest grid.
+        X = np.random.choice([0, 1], size=ny * nx, p=[1-p, p]).reshape(ny, nx)
+        X[(ny//2), (nx//2)] = 2
+        iterate(X, ny, nx, f)
 
 
-def iterate(X, ny, nx, p, f):
+
+def iterate(X, ny, nx, f):
     # Displacements from a cell to its eight nearest neighbours
-    neighbourhood = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+    neighbourhood = ((-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0))
 
     """Iterate the forest according to the forest-fire rules."""
 
-    # The boundary of the forest is always empty, so only consider cells
-    # indexed from 1 to nx-2, 1 to ny-2
-    X1 = np.zeros((ny, nx))
-    for ix in range(1,nx-1):
-        for iy in range(1,ny-1):
-            if X[iy,ix] == 0 and np.random.random() <= p:
-                X1[iy,ix] = 1
-                draw(X1)
-            if X[iy,ix] == 1:
-                X1[iy,ix] = 1
-                draw(X1)
-                for dx,dy in neighbourhood:
-                    if X[iy+dy,ix+dx] == 2:
-                        X1[iy,ix] = 2
-                        draw(X1)
-                        break
-                else:
-                    if np.random.random() <= f:
-                        X1[iy,ix] = 2
-                        draw(X1)
-    return X1
+    # the number one corresponds to a tree and number 2 corresponds to fire
+    set_alight = [1, 2]
+    # the list of numbers corresponds to the likelihood of setting a tree on fire
+    weighting = [(1-f), f]
+    while np.isin([1], X):
+        for ix in range(1, nx - 1):
+            for iy in range(1, ny - 1):
+                if X[iy, ix] == 2:
+                    for dx, dy in neighbourhood:
+                        if X[iy + dy, ix + dx] == 0:
+                            selection = choice(set_alight, p=weighting)
+                            X[iy + dy, ix + dx] = selection
+                            draw(X)
+                            break
+
+    draw(X)
+    create_animation()
+
+
 
 
 def draw(data):
-    # Colours for visualization: gold for sand, grey for rock and blue for water.
+    # Colours for visualization: green for trees, brown for mud and orange for fire.
     # module is poorly coded so colours and boundary array each need one more
     # element than there are colours in the animation and numbers in the matrix.
-    colors_list = ['brown', 'green', 'grey', 'orange']
-    # note that the colour green appears nowhere in the animation and neither
+    colors_list = ['green', 'brown', 'black', 'orange']
+    # observe that the colour black appears nowhere in the animation and neither
     # does the number three appear anywhere within the matrix,
     # i do not know why the developer indexes the arrays incorrectly.
     # create discrete colormap
@@ -135,9 +129,8 @@ def create_animation():
 
 def main():
     # The number of simulation replications.
-    nrep = 15
+    nrep = 1
     simulation(nrep)
-    create_animation()
     print("exit")
 
 
