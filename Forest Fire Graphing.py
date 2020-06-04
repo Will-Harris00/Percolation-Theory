@@ -34,7 +34,6 @@ from matplotlib import colors
 import os
 from sys import platform
 import shlex
-from numpy.random import choice
 import pandas as pd
 from openpyxl import load_workbook
 
@@ -125,7 +124,7 @@ def main():
     for i in nrep:
         i = round(i)
         print("\nRunning simulation with " + str(i) + " realisations")
-        # The density of mud in the forest not occupied by trees
+        ## The density of mud in the forest not occupied by trees
         p = 1
         df = pd.DataFrame(columns=["Density", "Number_Edge", "Predicted_Edges", "Total_Depth", "Average_Depth"])
         j = 0
@@ -148,22 +147,30 @@ def main():
             ## to allow enough time for the user to pause the animation
             if animate == True:
                 create_animation()
-        # this version required a preexisting excel file matching the name above
-        try:
-            with pd.ExcelWriter(excel_file, mode='x') as writer:
+        if nrep.index(i) == 0:
+            with pd.ExcelWriter(excel_file) as writer:
                 writer.save()
+                print("Created the excel file " + str(excel_file))
+        try:
             with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a') as writer:
                 writer.book = load_workbook(excel_file)
                 sheetName = str(i) + 'realisations' + str(ny) + "by" + str(nx)
                 df.to_excel(writer, sheetName, index=False, header=True)
+                try:
+                    writer.book.remove(writer.book['Sheet1'])
+                except KeyError:
+                    pass
                 writer.save()
         except PermissionError:
             print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
 
         print(df)
         df.plot(x='Density', y='Number_Edge', kind='scatter')
+        plt.title("Forest Fire Percolation - " + str(i) + " Realisations - " + str(ny) + "x" + str(nx) + " Grid")
         plt.xlim(0, 1)
         plt.ylim(0, i)
+        plt.xlabel('Density of mud in the forest')
+        plt.ylabel('Number of times the fire reaches the edge')
         plt.xticks(np.arange(0, 1+step, step=0.1))
         plt.yticks(np.arange(0, i+1, step=i/10))
         plt.show()
