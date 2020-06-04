@@ -35,7 +35,6 @@ import os
 from sys import platform
 import shlex
 from numpy.random import choice
-import pandas as pd
 
 filename = "dynamic_images.html"
 # change the fps to speed up or slow down the animation
@@ -50,60 +49,55 @@ ims = []
 
 def simulation(nrep):
     # The density of mud in the forest not occupied by trees
-    p = 0.6
+    p = 0.25
     # Probability of a tree catching fire.
     f = 0.4
     # Forest size (number of cells in x and y directions).
     ny, nx = 10, 10
+
+    ## The total distance across the simulation replications.
+    TD = 0
+
+    ## The number of times that the edge is reached.
+    NB = 0
+
     for i in range(int(nrep)):
         # Initialize the forest grid.
         X = np.random.choice([0, 1], size=ny * nx, p=[1-p, p]).reshape(ny, nx)
+        # Starting position of fire at centre of grid
         X[(ny//2), (nx//2)] = 2
-        iterate(X, ny, nx, f)
+        # Displacements from a cell to its eight nearest neighbours
+        neighbourhood = ((-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0))
 
+        """Iterate the forest according to the forest-fire rules."""
 
-
-def iterate(X, ny, nx, f):
-    # Displacements from a cell to its eight nearest neighbours
-    neighbourhood = ((-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0))
-
-    """Iterate the forest according to the forest-fire rules."""
-
-    # the number one corresponds to a tree and number 2 corresponds to fire
-    set_alight = [1, 2]
-    # the list of numbers corresponds to the likelihood of setting a tree on fire
-    weighting = [(1-f), f]
-    df = pd.DataFrame(X)
-    draw(X)
-    while 1 in df.values:
-        for ix in range(0, nx):
-            for iy in range(0, ny):
-                if X[iy, ix] == 2:
+        draw(X)
+        Boolean = True
+        iy, ix = ny // 2, nx // 2
+        positions = []
+        positions.append([iy, ix])
+        while Boolean:
+            for i in positions:
+                print(X)
+                if iy == ny or ix == nx:
+                    print("2")
+                    if X[iy, ix] == 2:
+                        break
+                else:
                     for dx, dy in neighbourhood:
                         try:
-                            if X[iy + dy, ix + dx] == 0:
-                                X[iy + dy, ix + dx] = choice(set_alight, p=weighting)
+                            ## Keep track of how often we reach the edges.
+                            if X[i[0] + dy, i[1] + dx] == 0:
+                                X[i[0] + dy, i[1] + dx] = 2
                                 draw(X)
-                                break
-                            else:
-                                df = pd.DataFrame(X)
-                                rand = True
-                                while rand:
-                                    if 1 in df.values:
-                                        ix = np.random.randint(0, ny)
-                                        iy = np.random.randint(0, nx)
-                                        if X[iy, ix] == 0:
-                                            X[iy, ix] = 2
-                                            rand = False
-                                    else:
-                                        break
+                                positions.append([i[0] + dy, i[1] + dx])
+                            continue
                         except IndexError:
-                            break
-    draw(X)
-    create_animation()
-
-
-
+                            pass
+                    continue
+                continue
+            create_animation()
+            break
 
 def draw(data):
     # Colours for visualization: green for trees, brown for mud and orange for fire.
