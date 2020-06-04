@@ -49,9 +49,7 @@ ims = []
 
 def simulation(nrep):
     # The density of mud in the forest not occupied by trees
-    p = 0.25
-    # Probability of a tree catching fire.
-    f = 0.4
+    p = 0.6
     # Forest size (number of cells in x and y directions).
     ny, nx = 10, 10
 
@@ -72,30 +70,28 @@ def simulation(nrep):
         """Iterate the forest according to the forest-fire rules."""
 
         draw(X)
-        Boolean = True
         iy, ix = ny // 2, nx // 2
         positions = []
         positions.append([iy, ix])
-        while Boolean:
+        while True:
             for i in positions:
+                if i[0] == ny - 1 or i[1] == nx - 1:
+                    create_animation()
+                    print("Reached Edge")
+                    break
                 print(X)
-                if iy == ny or ix == nx:
-                    print("2")
-                    if X[iy, ix] == 2:
-                        break
-                else:
-                    for dx, dy in neighbourhood:
-                        try:
-                            ## Keep track of how often we reach the edges.
-                            if X[i[0] + dy, i[1] + dx] == 0:
-                                X[i[0] + dy, i[1] + dx] = 2
-                                draw(X)
-                                positions.append([i[0] + dy, i[1] + dx])
-                            continue
-                        except IndexError:
-                            pass
-                    continue
+                for dx, dy in neighbourhood:
+                    try:
+                        ## Keep track of how often we reach the edges.
+                        if X[i[0] + dy, i[1] + dx] == 0:
+                            X[i[0] + dy, i[1] + dx] = 2
+                            draw(X)
+                            positions.append([i[0] + dy, i[1] + dx])
+                        continue
+                    except IndexError:
+                        pass
                 continue
+            print("Fire stopped spreading")
             create_animation()
             break
 
