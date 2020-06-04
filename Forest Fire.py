@@ -38,7 +38,7 @@ from numpy.random import choice
 
 filename = "dynamic_images.html"
 # change the fps to speed up or slow down the animation
-writer = animation.HTMLWriter(fps=4)
+writer = animation.HTMLWriter(fps=12)
 # ensure matrix is not truncated
 np.set_printoptions(threshold=np.inf)
 
@@ -51,7 +51,7 @@ def simulation(nrep):
     # The density of mud in the forest not occupied by trees
     p = 0.4
     # Forest size (number of cells in x and y directions).
-    ny, nx = 10, 10
+    ny, nx = 100, 100
 
     ## The total distance across the simulation replications.
     TD = 0
@@ -60,6 +60,7 @@ def simulation(nrep):
     NB = 0
 
     for i in range(int(nrep)):
+        print("\nRunning simulation:")
         # Initialize the forest grid.
         X = np.random.choice([0, 1], size=ny * nx, p=[1-p, p]).reshape(ny, nx)
         # Starting position of fire at centre of grid
@@ -79,18 +80,20 @@ def simulation(nrep):
                 for dx, dy in neighbourhood:
                     try:
                         ## Keep track of how often we reach the edges.
-                        if X[i[0] + dy, i[1] + dx] == 0:
-                            X[i[0] + dy, i[1] + dx] = 2
-                            draw(X)
-                            if i[0] + dy == ny - 1  or i[1] + dx == nx - 1:
-                                print(str(i[0] + dy) + " = " + str(ny - 1) + " or " + str(
-                                    i[0] + dy) + " = " + str(nx - 1))
+                        if boolean:
+                            if ((i[0] + dy == ny - 1) or (i[1] + dx == nx - 1)) and X[i[0] + dy, i[1] + dx] == 0:
+                                X[i[0] + dy, i[1] + dx] = 2
+                                for i in range (5):
+                                    draw(X)
+                                print("Fire reached the edge of the forest")
                                 create_animation()
-                                print("Reached Edge")
                                 boolean = False
                                 break
                             else:
-                                positions.append([i[0] + dy, i[1] + dx])
+                                if X[i[0] + dy, i[1] + dx] == 0:
+                                    X[i[0] + dy, i[1] + dx] = 2
+                                    positions.append([i[0] + dy, i[1] + dx])
+                                    draw(X)
                         continue
                     except IndexError:
                         pass
