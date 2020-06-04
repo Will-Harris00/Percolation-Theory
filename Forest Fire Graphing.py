@@ -57,15 +57,18 @@ def simulation(p, ny, nx, nrep, animate, separate):
         ims = []
 
     ## The total distance across the simulation replications.
-    TD = 0
+    #TD = 0
 
     ## The number of times that the edge is reached.
     NB = 0
 
     # Displacements from a cell to its eight nearest neighbours
     neighbourhood = ((-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0))
+    """
+    #neighbourhood = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+    """
     ## Simulation replications.
-    for i in range(int(nrep)):
+    for j in range(int(nrep)):
         # Initialize the forest grid.
         X = np.random.choice([0, 1], size=ny * nx, p=[1-p, p]).reshape(ny, nx)
         # Starting position of fire at centre of grid
@@ -78,7 +81,7 @@ def simulation(p, ny, nx, nrep, animate, separate):
         positions.append([iy, ix])
         boolean = True
         if animate == True:
-            draw(X)
+            draw(X, j+1, p, ny, nx)
         while True:
             for i in positions:
                 for dx, dy in neighbourhood:
@@ -94,18 +97,18 @@ def simulation(p, ny, nx, nrep, animate, separate):
                             else:
                                 if X[i[0] + dy, i[1] + dx] == 0:
                                     X[i[0] + dy, i[1] + dx] = 2
-                                    TD = TD + 1
+                                    #TD = TD + 1
                                     positions.append([i[0] + dy, i[1] + dx])
                                     if animate == True:
-                                        draw(X)
+                                        draw(X, j+1, p, ny, nx)
                         continue
                     except IndexError:
                         pass
             if animate == True:
-               for i in range(5):
-                    draw(X)
+                for i in range(5):
+                    draw(X, j+1, p, ny, nx)
             break
-    return NB, TD
+    return NB
 
 
 def main():
@@ -122,31 +125,36 @@ def main():
     step = 0.01
     print("\nThe grid size is: " + str(ny) + "x" + str(nx))
     for i in nrep:
+        pc_boolean = True
         i = round(i)
         print("\nRunning simulation with " + str(i) + " realisations")
         ## The density of mud in the forest not occupied by trees
         p = 1
-        df = pd.DataFrame(columns=["Density", "Number_Edge", "Predicted_Edges", "Total_Depth", "Average_Depth"])
+        df = pd.DataFrame(columns=["Density", "Number_Edge", "Frequency_Reach_Edge"])
         j = 0
         while p > 0:
             p -= step
             p = round(p, 2)
             sim = simulation(p, ny, nx, i, animate, separate)
-            NB = sim[0]
-            TD = sim[1]
+            NB = sim
+            #TD = sim[1]
             ## The estimated probability that we reach the edge.
             ## Frequency with which the edge is reached for a given probability
             NBprob = NB / i
 
             ## The average distance that is reached.
-            TDavg = TD / i
+            #TDavg = TD / i
 
-            df.loc[j] = [p, NB, NBprob, TD, TDavg]
+            df.loc[j] = [p, NB, NBprob]
             j += 1
             ## Draws the final frame of each simulation multiple times
             ## to allow enough time for the user to pause the animation
             if animate == True:
                 create_animation()
+
+            if pc_boolean and NB >= 1:
+                critperc = p
+                pc_boolean = False
         if nrep.index(i) == 0:
             with pd.ExcelWriter(excel_file) as writer:
                 writer.save()
@@ -165,18 +173,19 @@ def main():
             print("Please ensure the file '" + str(excel_file) + "' is not open in another program")
 
         print(df)
-        df.plot(x='Density', y='Number_Edge', kind='scatter')
+        print(critperc)
+        df.plot(x='Density', y='Frequency_Reach_Edge', kind='scatter')
         plt.title("Forest Fire Percolation - " + str(i) + " Realisations - " + str(ny) + "x" + str(nx) + " Grid")
         plt.xlim(0, 1)
-        plt.ylim(0, i)
+        plt.ylim(0, 1)
         plt.xlabel('Density of mud in the forest')
-        plt.ylabel('Number of times the fire reaches the edge')
+        plt.ylabel('Expectation that the edge is reached')
         plt.xticks(np.arange(0, 1+step, step=0.1))
-        plt.yticks(np.arange(0, i+1, step=i/10))
+        plt.yticks(np.arange(0, 1.1, step=0.1))
         plt.show()
 
 
-def draw(data):
+def draw(data, j, p, ny, nx):
     # Colours for visualization: green for trees, brown for mud and orange for fire.
     # module is poorly coded so colours and boundary array each need one more
     # element than there are colours in the animation and numbers in the matrix.
@@ -191,6 +200,8 @@ def draw(data):
     global ims
     plt.xticks([])
     plt.yticks([])
+    plt.title("Density of mud in the forest: " + str(p) + "\n Number of realisations: "
+              + str(j) + "\nSize of matrix: " + str(ny) + "x" + str(nx))
     im = plt.imshow(data, cmap=cmap, norm=norm, animated=True)
     ims.append([im])
 
