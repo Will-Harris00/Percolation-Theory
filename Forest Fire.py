@@ -35,6 +35,7 @@ import os
 from sys import platform
 import shlex
 from numpy.random import choice
+import pandas as pd
 
 filename = "dynamic_images.html"
 # change the fps to speed up or slow down the animation
@@ -51,9 +52,9 @@ def simulation(nrep):
     # The density of mud in the forest not occupied by trees
     p = 0.6
     # Probability of a tree catching fire.
-    f = 0.95
+    f = 0.4
     # Forest size (number of cells in x and y directions).
-    ny, nx = 5, 5
+    ny, nx = 10, 10
     for i in range(int(nrep)):
         # Initialize the forest grid.
         X = np.random.choice([0, 1], size=ny * nx, p=[1-p, p]).reshape(ny, nx)
@@ -72,27 +73,32 @@ def iterate(X, ny, nx, f):
     set_alight = [1, 2]
     # the list of numbers corresponds to the likelihood of setting a tree on fire
     weighting = [(1-f), f]
-    while np.isin([1], X):
-        for ix in range(1, nx - 1):
-            for iy in range(1, ny - 1):
+    df = pd.DataFrame(X)
+    draw(X)
+    while 1 in df.values:
+        for ix in range(0, nx):
+            for iy in range(0, ny):
                 if X[iy, ix] == 2:
                     for dx, dy in neighbourhood:
                         try:
                             if X[iy + dy, ix + dx] == 0:
-                                selection = choice(set_alight, p=weighting)
-                                X[iy + dy, ix + dx] = selection
+                                X[iy + dy, ix + dx] = choice(set_alight, p=weighting)
                                 draw(X)
                                 break
                             else:
+                                df = pd.DataFrame(X)
                                 rand = True
                                 while rand:
-                                    ix = np.random.randint(0, ny)
-                                    iy = np.random.randint(0, nx)
-                                    if X[iy + dy, ix + dx] == 0:
-                                        X[iy + dy, ix + dx] = 2
-                                        rand = False
+                                    if 1 in df.values:
+                                        ix = np.random.randint(0, ny)
+                                        iy = np.random.randint(0, nx)
+                                        if X[iy, ix] == 0:
+                                            X[iy, ix] = 2
+                                            rand = False
+                                    else:
+                                        break
                         except IndexError:
-                            pass
+                            break
     draw(X)
     create_animation()
 
